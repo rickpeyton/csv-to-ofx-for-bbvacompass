@@ -15,12 +15,6 @@ prior_balance = csv_contents[2][2].gsub(/[^\d^\.]/, '').to_f
 statement_start_date = Date.strptime(csv_contents[4][0], '%m/%d/%Y')
 statement_end_date = Date.strptime(csv_contents[4][1], '%m/%d/%Y')
 
-p available_balance
-p posted_balance
-p prior_balance
-p statement_start_date
-p statement_end_date
-
 File.open(ofx_filename, 'w') do |f|
   f.puts 'OFXHEADER:100'
   f.puts 'DATA:OFXSGML'
@@ -60,43 +54,44 @@ File.open(ofx_filename, 'w') do |f|
   f.puts '          <BANKTRANLIST>'
   f.puts "            <DTSTART>#{statement_start_date.strftime('%Y%m%d')}"
   f.puts "            <DTEND>#{statement_end_date.strftime('%Y%m%d')}"
-
-  f.puts '            <STMTTRN>'
-  f.puts '              <TRNTYPE>CREDIT'
-  f.puts '              <DTPOSTED>20070315'
-  f.puts '              <DTUSER>20070315'
-  f.puts '              <TRNAMT>200.00'
-  f.puts '              <FITID>980315001'
-  f.puts '              <NAME>DEPOSIT'
-  f.puts '              <MEMO>automatic deposit'
-  f.puts '            </STMTTRN>'
-  f.puts '            <STMTTRN>'
-  f.puts '              <TRNTYPE>CREDIT'
-  f.puts '              <DTPOSTED>20070329'
-  f.puts '              <DTUSER>20070329'
-  f.puts '              <TRNAMT>150.00'
-  f.puts '              <FITID>980310001'
-  f.puts '              <NAME>TRANSFER'
-  f.puts '              <MEMO>Transfer from checking'
-  f.puts '            </STMTTRN>'
-  f.puts '            <STMTTRN>'
-  f.puts '              <TRNTYPE>PAYMENT'
-  f.puts '              <DTPOSTED>20070709'
-  f.puts '              <DTUSER>20070709'
-  f.puts '              <TRNAMT>-100.00'
-  f.puts '              <FITID>980309001'
-  f.puts '                <CHECKNUM>1025'
-  f.puts '              <NAME>John Hancock'
-  f.puts '            </STMTTRN>'
-
+  rows_to_skip = 6
+  unique_fitid = 0
+  csv_contents.each do |row|
+    if rows_to_skip > 0
+      rows_to_skip -= 1
+    else
+      transaction_amount = row[2].gsub(/[^-^\d^\.]/, '').to_f
+      transaction_date = Date.strptime(row[0], '%m/%d/%Y').strftime('%Y%m%d')
+      unique_fitid += 1
+     if transaction_amount >= 0
+       f.puts '            <STMTTRN>'
+       f.puts '              <TRNTYPE>CREDIT'
+       f.puts "              <DTPOSTED>#{transaction_date}"
+       f.puts "              <DTUSER>#{transaction_date}"
+       f.puts "              <TRNAMT>#{transaction_amount}"
+       f.puts "              <FITID>#{Time.now.strftime('%Y%m%d')}#{unique_fitid}"
+       f.puts "              <NAME>#{row[1].gsub(/([^\S])\1(CREDIT)/, '')}"
+       f.puts '            </STMTTRN>'
+     else
+       f.puts '            <STMTTRN>'
+       f.puts '              <TRNTYPE>PAYMENT'
+       f.puts "              <DTPOSTED>#{transaction_date}"
+       f.puts "              <DTUSER>#{transaction_date}"
+       f.puts "              <TRNAMT>#{transaction_amount}"
+       f.puts "              <FITID>#{Time.now.strftime('%Y%m%d')}#{unique_fitid}"
+       f.puts "              <NAME>#{row[1].gsub(/([^\S])\1(DEBIT)/, '')}"
+       f.puts '            </STMTTRN>'
+     end
+    end
+  end
   f.puts '          </BANKTRANLIST>'
   f.puts '          <LEDGERBAL>'
   f.puts "            <BALAMT>#{posted_balance}"
-  f.puts '            <DTASOF>20071015021529.000[-8:PST]'
+  f.puts "            <DTASOF>#{Time.now.strftime('%Y%m%d%H%M%S.%L')}"
   f.puts '          </LEDGERBAL>'
   f.puts '          <AVAILBAL>'
   f.puts "            <BALAMT>#{available_balance}"
-  f.puts '            <DTASOF>20071015021529.000[-8:PST]'
+  f.puts "            <DTASOF>#{Time.now.strftime('%Y%m%d%H%M%S.%L')}"
   f.puts '          </AVAILBAL>'
   f.puts '        </STMTRS>'
   f.puts '      </STMTTRNRS>'
