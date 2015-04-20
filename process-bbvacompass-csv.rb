@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require 'csv'
 require 'date'
+require 'pry'
 
 csv_filename = ARGV[0]
 if (csv_filename == nil) || (csv_filename[-4..-1] != '.csv')
@@ -16,9 +17,9 @@ csv_contents = CSV.read(csv_filename)
 
 available_balance = csv_contents[2][0].gsub(/[^\d^\.]/, '').to_f
 posted_balance = csv_contents[2][1].gsub(/[^\d^\.]/, '').to_f
-prior_balance = csv_contents[2][2].gsub(/[^\d^\.]/, '').to_f
-statement_start_date = Date.strptime(csv_contents[4][0], '%m/%d/%Y')
-statement_end_date = Date.strptime(csv_contents[4][1], '%m/%d/%Y')
+# prior_balance = csv_contents[2][2].gsub(/[^\d^\.]/, '').to_f
+statement_start_date = Date.strptime(csv_contents[6][0], '%m/%d/%Y')
+statement_end_date = Date.strptime(csv_contents[6][1], '%m/%d/%Y')
 
 File.open(ofx_filename, 'w') do |f|
   f.puts 'OFXHEADER:100'
@@ -59,7 +60,7 @@ File.open(ofx_filename, 'w') do |f|
   f.puts '          <BANKTRANLIST>'
   f.puts "            <DTSTART>#{statement_start_date.strftime('%Y%m%d')}"
   f.puts "            <DTEND>#{statement_end_date.strftime('%Y%m%d')}"
-  rows_to_skip = 6
+  rows_to_skip = 10
   unique_fitid = 0
   csv_contents.each do |row|
     if rows_to_skip > 0

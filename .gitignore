@@ -8,3 +8,5 @@ sample_ofx_response.ofx
 bbvacompass.OFX
 *.OFX
 AccountStatement_5830-4.csv
+sample2.csv
+temp.rb
